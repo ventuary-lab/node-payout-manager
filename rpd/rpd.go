@@ -125,7 +125,7 @@ func StateToBalanceMap(contractState map[string]state.State, neutrinoAssetId str
 	return balances
 }
 
-func CreateMassRewordTx(rewords storage.BalanceMap, sender string) transactions.Transaction {
+func CreateMassRewordTx(rewords storage.BalanceMap, sender string, assetId string) transactions.Transaction {
 	var transfers []transactions.Transfer
 	total := float64(0)
 	for address, value := range rewords {
@@ -137,6 +137,6 @@ func CreateMassRewordTx(rewords storage.BalanceMap, sender string) transactions.
 	}
 
 	rewordTx := transactions.New(transactions.MassTransfer, sender)
-	rewordTx.NewMassTransfer(transfers, nil)
+	rewordTx.NewMassTransfer(transfers, &assetId)
 	return rewordTx
 }

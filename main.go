@@ -73,6 +73,8 @@ func Scan(nodeClient client.Node, cfg config.Config) error {
 		return err
 	}
 
+	currLogger.Infow("Last payment tx: " + lastPaymentTxHash)
+
 	lastTxHeight, err := storage.LastTxHeight(db)
 	if err != nil && err != leveldb.ErrNotFound {
 		return err
@@ -80,7 +82,6 @@ func Scan(nodeClient client.Node, cfg config.Config) error {
 		lastTxHeight = lastPaymentTx.Height
 	}
 
-	currLogger.Infow("Last payment tx: " + lastPaymentTxHash)
 	currLogger.Infow("Last scanned tx height: " + strconv.Itoa(lastTxHeight))
 
 	height, err := nodeClient.GetHeight()
@@ -129,7 +130,7 @@ func Scan(nodeClient client.Node, cfg config.Config) error {
 			return err
 		}
 
-		rewordTx := rpd.CreateMassRewordTx(rewords, cfg.Sender)
+		rewordTx := rpd.CreateMassRewordTx(rewords, cfg.Sender, cfg.AssetId)
 
 		currLogger.Infow("Sign and broadcast")
 		if err := nodeClient.SignTx(&rewordTx); err != nil {

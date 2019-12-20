@@ -14,5 +14,5 @@ func (tx *Transaction) NewMassTransfer(transfers []Transfer, assetId *string) {
 		AssetID:   assetId,
 		Transfers: transfers,
 	}
-	tx.Fee = 50000*len(transfers) + 100000
+	tx.Fee = 50000*(len(transfers)+1) + 100000
 }
