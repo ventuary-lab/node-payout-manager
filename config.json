@@ -1,11 +1,11 @@
 {
-  "nodeUrl": "https://nodes.wavesnodes.com",
+  "nodeUrl": "",
   "apiKey": "",
-  "neutrinoContract": "3PC9BfRwJWWiw9AREE2B3eWzCks3CYtg4yo",
-  "rpdContract": "3PNikM6yp4NqcSU8guxQtmR5onr2D4e8yTJ",
+  "neutrinoContract": "",
+  "rpdContract": "",
   "payoutInterval": 1440,
-  "sender": "3PLosK1gb6GpN5vV7ZyiCdwRWizpy2H31KR",
+  "sender": "",
   "sleepSec": 60,
-  "assetId": "DG2xFkPdDwKUoBkzGAhQtLpSGzfXLiCYPEzeKH2Ad24p",
-  "defaultLastPaymentTx": "4nQa5FyShhadzpCradcEY7vmvJSTMrETnQHaYBrqasa2"
+  "assetId": "",
+  "defaultLastPaymentTx": ""
 }
