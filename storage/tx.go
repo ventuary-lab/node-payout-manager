@@ -6,16 +6,16 @@ import (
 	"github.com/syndtr/goleveldb/leveldb"
 )
 
-func LastPaymentTx(db *leveldb.DB) (string, error) {
-	value, err := db.Get([]byte(LastPaymentTxKey), nil)
+func LastScanHeight(db *leveldb.DB) (int, error) {
+	value, err := db.Get([]byte(LastScanHeightKey), nil)
 	if err != nil {
-		return "", err
+		return 0, err
 	}
 
-	return string(value), err
+	return int(binary.LittleEndian.Uint32(value)), err
 }
-func LastTxHeight(db *leveldb.DB) (int, error) {
-	value, err := db.Get([]byte(LastTxHeightKey), nil)
+func LastPaymentHeight(db *leveldb.DB) (int, error) {
+	value, err := db.Get([]byte(LastPaymentHeightKey), nil)
 	if err != nil {
 		return 0, err
 	}
@@ -23,12 +23,12 @@ func LastTxHeight(db *leveldb.DB) (int, error) {
 	return int(binary.LittleEndian.Uint32(value)), err
 }
 
-func PutPaymentTx(db *leveldb.DB, txHash string) error {
-	return db.Put([]byte(LastPaymentTxKey), []byte(txHash), nil)
+func PutPaymentHeight(db *leveldb.DB, txHash string) error {
+	return db.Put([]byte(LastPaymentHeightKey), []byte(txHash), nil)
 }
-func PutLastTxHeight(db *leveldb.DB, height int) error {
+func PutScanHeight(db *leveldb.DB, height int) error {
 	b := make([]byte, 8)
 
 	binary.LittleEndian.PutUint32(b, uint32(height))
-	return db.Put([]byte(LastTxHeightKey), b, nil)
+	return db.Put([]byte(LastScanHeightKey), b, nil)
 }

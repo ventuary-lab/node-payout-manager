@@ -6,18 +6,18 @@ import (
 )
 
 /*
-	lastTx - last scan transaction
-	lastPaymentTx - last rewards payment
+	lastScanHeight - last scan height
+	lastPaymentHeight - last rewards payment height
 	balance_{height}_{address}- rpd user balance by height
-	dust_{lastPaymentTx}_{address} - dusts user by height
+	dust_{lastScanTxHeight}_{address} - dusts user by height
 */
 
 const (
-	LastTxHeightKey  string = "lastTxHeight"
-	LastPaymentTxKey string = "lastPaymentTx"
-	BalanceKey       string = "balance"
-	DustKey          string = "dust"
-	DbPath                  = "db/"
+	LastScanHeightKey    string = "lastScanHeight"
+	LastPaymentHeightKey string = "lastPaymentHeight"
+	BalanceKey           string = "balance"
+	DustKey              string = "dust"
+	DbPath                      = "db/"
 )
 
 func allByPrefix(db *leveldb.DB, prefix string) (map[string][]byte, error) {

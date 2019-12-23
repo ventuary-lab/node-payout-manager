@@ -7,5 +7,5 @@
   "sender": "",
   "sleepSec": 60,
   "assetId": "",
-  "defaultLastPaymentTx": ""
+  "defaultLastPaymentHeight": 0
 }

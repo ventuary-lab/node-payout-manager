@@ -44,17 +44,28 @@ func main() {
 }
 
 func Scan(nodeClient client.Node, cfg config.Config) error {
+	rpdConfig := rpd.Config{
+		Sender:           cfg.Sender,
+		NeutrinoContract: cfg.NeutrinoContract,
+		AssetId:          cfg.AssetId,
+		RpdContract:      cfg.RPDContract,
+	}
 	currLogger.Infow("Start scan")
 
 	// convert all balance waves -> usd-n
 
-	swapHash, err := rpd.SwapAllBalance(nodeClient, cfg.Sender, cfg.NeutrinoContract)
-	currLogger.Infow("Await swap status")
+	swapHash, err := rpd.SwapAllBalance(nodeClient, rpdConfig)
+
 	if err != nil {
 		return err
 	}
-
-	currLogger.Infow("Swap tx: " + swapHash)
+	if swapHash != "" {
+		errChan := nodeClient.WaitTx(swapHash)
+		if err := <-errChan; err != nil {
+			return err
+		}
+		currLogger.Infow("Swap tx: " + swapHash)
+	}
 
 	db, err := leveldb.OpenFile(storage.DbPath, nil)
 	if err != nil {
@@ -62,27 +73,21 @@ func Scan(nodeClient client.Node, cfg config.Config) error {
 	}
 	defer db.Close()
 
-	lastPaymentTxHash, err := storage.LastPaymentTx(db)
+	lastPaymentHeight, err := storage.LastPaymentHeight(db)
 	if err != nil && err != leveldb.ErrNotFound {
 		return err
-	} else if lastPaymentTxHash == "" {
-		lastPaymentTxHash = cfg.DefaultLastPaymentTx
+	} else if lastPaymentHeight == 0 {
+		lastPaymentHeight = cfg.DefaultLastPaymentHeight
 	}
-	lastPaymentTx, err := nodeClient.GetTxById(lastPaymentTxHash)
-	if err != nil {
-		return err
-	}
+	currLogger.Infow("Last payment height: " + strconv.Itoa(lastPaymentHeight))
 
-	currLogger.Infow("Last payment tx: " + lastPaymentTxHash)
-
-	lastTxHeight, err := storage.LastTxHeight(db)
+	lastHeight, err := storage.LastScanHeight(db)
 	if err != nil && err != leveldb.ErrNotFound {
 		return err
-	} else if lastTxHeight == 0 {
-		lastTxHeight = lastPaymentTx.Height
+	} else if lastHeight == 0 {
+		lastHeight = lastPaymentHeight
 	}
-
-	currLogger.Infow("Last scanned tx height: " + strconv.Itoa(lastTxHeight))
+	currLogger.Infow("Last scan height: " + strconv.Itoa(lastHeight))
 
 	height, err := nodeClient.GetHeight()
 	if err != nil {
@@ -91,62 +96,72 @@ func Scan(nodeClient client.Node, cfg config.Config) error {
 
 	currLogger.Infow("Height: " + strconv.Itoa(height))
 
-	currLogger.Infow("Get state by address")
+	currLogger.Infow("Get contract state")
 	contractState, err := nodeClient.GetStateByAddress(cfg.RPDContract)
 	if err != nil {
 		return err
 	}
-	balances := rpd.StateToBalanceMap(contractState, cfg.AssetId)
+	balances := rpd.StateToBalanceMap(contractState, rpdConfig)
+	if len(balances) == 0 {
+		currLogger.Infow("Neutrino stakers not found")
+		return nil
+	}
+	currLogger.Debug("Contract state: ", balances)
 
 	currLogger.Infow("Recovery balance")
-	balancesByHeight, err := rpd.RecoveryBalance(nodeClient, cfg.RPDContract, cfg.AssetId, balances, height, lastTxHeight)
+	balancesByHeight, err := rpd.RecoveryBalance(nodeClient, rpdConfig, balances, height, lastHeight)
 	if err != nil {
 		return err
 	}
+	currLogger.Debug("Balance: ", balancesByHeight)
 
 	currLogger.Infow("Write to level db")
-	// write to level db
 	for height, balances := range balancesByHeight {
 		err := storage.PutBalances(db, height, balances)
 		if err != nil {
 			return err
 		}
 	}
-	err = storage.PutLastTxHeight(db, height)
+	err = storage.PutScanHeight(db, height)
 	if err != nil {
 		return err
 	}
 
-	// payout rewords
-	if height >= lastPaymentTx.Height+cfg.PayoutInterval {
+	if height >= lastPaymentHeight+cfg.PayoutInterval {
+		currLogger.Infow("Start payout rewords")
 		balance, err := nodeClient.GetBalance(cfg.Sender, cfg.AssetId)
+		if balance == 0 {
+			currLogger.Infow("Await pacemaker oracle or swap")
+			return nil
+		}
 		if err != nil {
 			return err
 		}
 		currLogger.Infow("Total balance: " + strconv.FormatFloat(balance, 'f', 0, 64))
 		currLogger.Infow("Calculate rewords")
-		rewords, err := rpd.CalculateRewords(db, balance, height, lastPaymentTx.Height)
+		rewords, err := rpd.CalculateRewords(db, balance, height, lastPaymentHeight)
 		if err != nil {
 			return err
 		}
+		currLogger.Debug("Rewords: ", rewords)
 
-		rewordTx := rpd.CreateMassRewordTx(rewords, cfg.Sender, cfg.AssetId)
-
+		rewordTx := rpd.CreateMassRewordTx(rewords, rpdConfig)
 		currLogger.Infow("Sign and broadcast")
 		if err := nodeClient.SignTx(&rewordTx); err != nil {
 			return err
 		}
+		currLogger.Infow("Reword tx hash: " + rewordTx.ID)
+		currLogger.Debug("Reword tx: ", rewordTx)
 
 		if err := nodeClient.Broadcast(rewordTx); err != nil {
 			return err
 		}
-		//TODO massTx
-		if err := storage.PutPaymentTx(db, rewordTx.ID); err != nil {
+
+		//TODO
+		if err := storage.PutPaymentHeight(db, rewordTx.ID); err != nil {
 			return err
 		}
-
-		currLogger.Infow("Reword tx: " + rewordTx.ID)
-		currLogger.Debugw("Reword tx: %s", rewordTx)
 	}
+	currLogger.Infow("End scan")
 	return nil
 }

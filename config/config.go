@@ -6,15 +6,15 @@ import (
 )
 
 type Config struct {
-	NodeURL              string
-	ApiKey               string
-	NeutrinoContract     string
-	RPDContract          string
-	PayoutInterval       int
-	Sender               string
-	SleepSec             int32
-	AssetId              string
-	DefaultLastPaymentTx string
+	NodeURL                  string
+	ApiKey                   string
+	NeutrinoContract         string
+	RPDContract              string
+	PayoutInterval           int
+	Sender                   string
+	SleepSec                 int
+	AssetId                  string
+	DefaultLastPaymentHeight int
 }
 
 func Load(filename string) (Config, error) {
