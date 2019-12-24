@@ -127,7 +127,11 @@ func Scan(nodeClient client.Node, cfg config.Config) error {
 		return err
 	}
 
-	if height >= lastPaymentHeight+cfg.PayoutInterval {
+	neutrinoContractState, err := nodeClient.GetStateByAddress(cfg.NeutrinoContract)
+	if err != nil {
+		return err
+	}
+	if height >= lastPaymentHeight+cfg.PayoutInterval && neutrinoContractState["balance_lock_waves_"+cfg.Sender].Value.(float64) == 0 {
 		currLogger.Infow("Start payout rewords")
 		balance, err := nodeClient.GetBalance(cfg.Sender, cfg.AssetId)
 		if balance == 0 {
@@ -145,20 +149,21 @@ func Scan(nodeClient client.Node, cfg config.Config) error {
 		}
 		currLogger.Debug("Rewords: ", rewords)
 
-		rewordTx := rpd.CreateMassRewordTx(rewords, rpdConfig)
+		rewordTxs := rpd.CreateMassRewordTxs(rewords, rpdConfig)
 		currLogger.Infow("Sign and broadcast")
-		if err := nodeClient.SignTx(&rewordTx); err != nil {
-			return err
-		}
-		currLogger.Infow("Reword tx hash: " + rewordTx.ID)
-		currLogger.Debug("Reword tx: ", rewordTx)
+		for _, rewordTx := range rewordTxs {
+			if err := nodeClient.SignTx(&rewordTx); err != nil {
+				return err
+			}
+			currLogger.Infow("Reword tx hash: " + rewordTx.ID)
+			currLogger.Debug("Reword tx: ", rewordTx)
 
-		if err := nodeClient.Broadcast(rewordTx); err != nil {
-			return err
+			if err := nodeClient.Broadcast(rewordTx); err != nil {
+				return err
+			}
 		}
-
 		//TODO
-		if err := storage.PutPaymentHeight(db, rewordTx.ID); err != nil {
+		if err := storage.PutPaymentHeight(db, rewordTxs[0].Height); err != nil {
 			return err
 		}
 	}

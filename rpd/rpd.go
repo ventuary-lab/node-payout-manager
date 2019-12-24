@@ -127,8 +127,8 @@ func StateToBalanceMap(contractState map[string]state.State, rpdConfig Config) s
 	return balances
 }
 
-func CreateMassRewordTx(rewords storage.BalanceMap, rpdConfig Config) transactions.Transaction {
-	var transfers []transactions.Transfer
+func CreateMassRewordTxs(rewords storage.BalanceMap, rpdConfig Config) []transactions.Transaction {
+	transfers := make([]transactions.Transfer, 0, len(rewords))
 	total := float64(0)
 	for address, value := range rewords {
 		roundValue := math.Floor(value)
@@ -138,7 +138,17 @@ func CreateMassRewordTx(rewords storage.BalanceMap, rpdConfig Config) transactio
 		}
 	}
 
-	rewordTx := transactions.New(transactions.MassTransfer, rpdConfig.Sender)
-	rewordTx.NewMassTransfer(transfers, &rpdConfig.AssetId)
-	return rewordTx
+	rewordTxs := make([]transactions.Transaction, 0, int(math.Ceil(float64(len(transfers))/100)))
+	lenTransfers := len(transfers)
+	for i := 0; i < lenTransfers; i += 100 {
+		endIndex := i + 100
+		if endIndex > lenTransfers {
+			endIndex = lenTransfers
+		}
+		actualTransfers := transfers[i:endIndex]
+		rewordTx := transactions.New(transactions.MassTransfer, rpdConfig.Sender)
+		rewordTx.NewMassTransfer(actualTransfers, &rpdConfig.AssetId)
+		rewordTxs = append(rewordTxs, rewordTx)
+	}
+	return rewordTxs
 }

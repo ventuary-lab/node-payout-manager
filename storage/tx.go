@@ -23,8 +23,11 @@ func LastPaymentHeight(db *leveldb.DB) (int, error) {
 	return int(binary.LittleEndian.Uint32(value)), err
 }
 
-func PutPaymentHeight(db *leveldb.DB, txHash string) error {
-	return db.Put([]byte(LastPaymentHeightKey), []byte(txHash), nil)
+func PutPaymentHeight(db *leveldb.DB, txHash int) error {
+	b := make([]byte, 8)
+
+	binary.LittleEndian.PutUint32(b, uint32(txHash))
+	return db.Put([]byte(LastPaymentHeightKey), b, nil)
 }
 func PutScanHeight(db *leveldb.DB, height int) error {
 	b := make([]byte, 8)
