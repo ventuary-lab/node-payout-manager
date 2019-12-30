@@ -163,7 +163,7 @@ func Scan(nodeClient client.Node, cfg config.Config) error {
 			}
 		}
 		//TODO
-		if err := storage.PutPaymentHeight(db, rewordTxs[0].Height); err != nil {
+		if err := storage.PutPaymentHeight(db, height); err != nil {
 			return err
 		}
 	}
