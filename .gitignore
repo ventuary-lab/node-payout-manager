@@ -3,3 +3,4 @@ main
 db/
 .idea/
 config.development.json
+config.production.json
