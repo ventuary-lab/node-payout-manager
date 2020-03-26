@@ -2,6 +2,8 @@ package main
 
 import (
 	"flag"
+	"fmt"
+	"os"
 	"strconv"
 	"time"
 
@@ -143,13 +145,19 @@ func Scan(nodeClient client.Node, cfg config.Config) error {
 		}
 		currLogger.Infow("Total balance: " + strconv.FormatFloat(balance, 'f', 0, 64))
 		currLogger.Infow("Calculate rewords")
+		//
 		rewords, err := rpd.CalculateRewords(db, balance, height, lastPaymentHeight)
-		if err != nil {
-			return err
-		}
-		currLogger.Debug("Rewords: ", rewords)
+		//if err != nil {
+		//	return err
+		//}
+		////currLogger.Debug("Rewords: ", rewordsI)
+		//fmt.Printf("REWARDS: %+v \n", rewords)
+		//
+		//os.Exit(0)
 
-		rewordTxs := rpd.CreateMassRewordTxs(rewords, rpdConfig)
+
+		rewordTxs := rpd.CreateMassRewardTxs(rewords, rpdConfig)
+
 		currLogger.Infow("Sign and broadcast")
 		for _, rewordTx := range rewordTxs {
 			if err := nodeClient.SignTx(&rewordTx); err != nil {

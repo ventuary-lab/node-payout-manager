@@ -15,6 +15,8 @@ type ContractFunc string
 const (
 	MassTransfer TxType = 11
 	InvokeScript TxType = 16
+
+	MassTransferReferralAttachment = "sp"
 )
 
 type Transaction struct {
@@ -27,6 +29,7 @@ type Transaction struct {
 	ID              string   `structs:"id"`
 	Timestamp       int64    `structs:"timestamp"`
 	Height          int      `structs:"height"`
+	Attachment      string   `structs:"attachment"`
 
 	InvokeScriptBody *InvokeScriptBody `structs:"-"`
 	MassTransferBody *MassTransferBody `structs:"-"`

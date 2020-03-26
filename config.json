@@ -7,5 +7,6 @@
   "sender": "",
   "sleepSec": 60,
   "assetId": "",
-  "defaultLastPaymentHeight": 0
+  "defaultLastPaymentHeight": 0,
+  "stakingCalculatorUrl": "http://94.237.95.65:8006"
 }
