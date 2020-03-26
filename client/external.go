@@ -1,5 +1,12 @@
 package client
 
+import (
+	bytes2 "bytes"
+	"encoding/json"
+	"io/ioutil"
+	"net/http"
+)
+
 const (
 	StakingCalculatorIndexPath string = "/"
 )
@@ -9,8 +16,8 @@ type StakingCalculator struct {
 }
 
 type StakingCalculationPayment struct {
-	Recipient *string
-	Amount int64
+	Recipient string 	`json:"recipient"`
+	Amount int64        `json:"amount"`
 }
 
 type StakingCalculationResult struct {
@@ -24,15 +31,25 @@ func (sc *StakingCalculator) Create (url string) *StakingCalculator {
 	}
 }
 
-func (sc *StakingCalculator) FetchStakingRewards (payments StakingCalculationPayment) *StakingCalculationResult {
-	//bytes, err := json.Marshal(payments)
-	//
-	//if err != nil {
-	//	return nil
-	//}
-	//
-	//body := io.Reader
-	//
-	//response, respErr := http.Post(*sc.Url, "application/json", body)
-	return nil
+func (sc *StakingCalculator) FetchStakingRewards (payments []StakingCalculationPayment) *StakingCalculationResult {
+	reqDict := map[string][]StakingCalculationPayment {
+		"payments": payments,
+	}
+	bytes, err := json.Marshal(reqDict)
+
+	if err != nil {
+		return nil
+	}
+
+	body := bytes2.NewReader(bytes)
+	response, _ := http.Post(*sc.Url, "application/json", body)
+
+	var parsed StakingCalculationResult
+	responseByteValue, _ := ioutil.ReadAll(response.Body)
+	_ = json.Unmarshal(responseByteValue, &parsed)
+	// fmt.Printf("CODE: %v %v \n", response.Status, string(bytes))
+
+	defer response.Body.Close()
+
+	return &parsed
 }

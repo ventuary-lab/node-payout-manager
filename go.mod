@@ -12,6 +12,10 @@ require (
 	github.com/ethereum/go-ethereum v1.9.9 // indirect
 	github.com/fatih/structs v1.1.0
 	github.com/go-ole/go-ole v1.2.4 // indirect
+	github.com/go-openapi/errors v0.19.4
+	github.com/go-openapi/strfmt v0.19.5
+	github.com/go-openapi/swag v0.19.8
+	github.com/go-openapi/validate v0.19.7
 	github.com/kr/fs v0.1.0 // indirect
 	github.com/labstack/gommon v0.3.0 // indirect
 	github.com/mitchellh/mapstructure v1.1.2

@@ -1,7 +1,6 @@
 package rpd
 
 import (
-	"github.com/ventuary-lab/node-payout-manager/swagger-types/models"
 	"math"
 	"strings"
 
@@ -141,25 +140,25 @@ func GatherTransfersForMassRewardTxs(rewords *storage.BalanceMap) []transactions
 	return transfers
 }
 
-//func CreateMassRewardTxs(rewords storage.BalanceMap, rpdConfig Config) []transactions.Transaction {
-	//transfers := GatherTransfersForMassRewardTxs(&rewords)
-	//
-	//rewardTxs := make([]transactions.Transaction, 0, int(math.Ceil(float64(len(transfers))/100)))
-	//lenTransfers := len(transfers)
-	//for i := 0; i < lenTransfers; i += 100 {
-	//	endIndex := i + 100
-	//
-	//	if endIndex > lenTransfers {
-	//		endIndex = lenTransfers
-	//	}
-	//
-	//	actualTransfers := transfers[i:endIndex]
-	//	rewardTx := transactions.New(transactions.MassTransfer, rpdConfig.Sender)
-	//	rewardTx.NewMassTransfer(actualTransfers, &rpdConfig.AssetId)
-	//	rewardTxs = append(rewardTxs, rewardTx)
-	//}
-	//return rewardTxs
-//}
+func CreateMassRewardTxs(rewords storage.BalanceMap, rpdConfig Config) []transactions.Transaction {
+	transfers := GatherTransfersForMassRewardTxs(&rewords)
+
+	rewardTxs := make([]transactions.Transaction, 0, int(math.Ceil(float64(len(transfers))/100)))
+	lenTransfers := len(transfers)
+	for i := 0; i < lenTransfers; i += 100 {
+		endIndex := i + 100
+
+		if endIndex > lenTransfers {
+			endIndex = lenTransfers
+		}
+
+		actualTransfers := transfers[i:endIndex]
+		rewardTx := transactions.New(transactions.MassTransfer, rpdConfig.Sender)
+		rewardTx.NewMassTransfer(actualTransfers, &rpdConfig.AssetId)
+		rewardTxs = append(rewardTxs, rewardTx)
+	}
+	return rewardTxs
+}
 
 func CreateDirectMassRewardTransactions(rewords storage.BalanceMap, rpdConfig Config) []transactions.Transaction {
 	transfers := GatherTransfersForMassRewardTxs(&rewords)
