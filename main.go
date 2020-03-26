@@ -2,6 +2,10 @@ package main
 
 import (
 	"flag"
+	//"fmt"
+	"github.com/ventuary-lab/node-payout-manager/blockchain/transactions"
+	//"os"
+	//"reflect"
 	"strconv"
 	"time"
 
@@ -81,14 +85,6 @@ func Scan(nodeClient client.Node, cfg config.Config) error {
 	}
 	currLogger.Infow("Last payment height: " + strconv.Itoa(lastPaymentHeight))
 
-	lastHeight, err := storage.LastScanHeight(db)
-	if err != nil && err != leveldb.ErrNotFound {
-		return err
-	} else if lastHeight == 0 {
-		lastHeight = lastPaymentHeight
-	}
-	currLogger.Infow("Last scan height: " + strconv.Itoa(lastHeight))
-
 	height, err := nodeClient.GetHeight()
 	if err != nil {
 		return err
@@ -105,26 +101,6 @@ func Scan(nodeClient client.Node, cfg config.Config) error {
 	if len(balances) == 0 {
 		currLogger.Infow("Neutrino stakers not found")
 		return nil
-	}
-	currLogger.Debug("Contract state: ", balances)
-
-	currLogger.Infow("Recovery balance")
-	balancesByHeight, err := rpd.RecoveryBalance(nodeClient, rpdConfig, balances, height, lastHeight)
-	if err != nil {
-		return err
-	}
-	currLogger.Debug("Balance: ", balancesByHeight)
-
-	currLogger.Infow("Write to level db")
-	for height, balances := range balancesByHeight {
-		err := storage.PutBalances(db, height, balances)
-		if err != nil {
-			return err
-		}
-	}
-	err = storage.PutScanHeight(db, height)
-	if err != nil {
-		return err
 	}
 
 	neutrinoContractState, err := nodeClient.GetStateByAddress(cfg.NeutrinoContract)
@@ -143,15 +119,20 @@ func Scan(nodeClient client.Node, cfg config.Config) error {
 		}
 		currLogger.Infow("Total balance: " + strconv.FormatFloat(balance, 'f', 0, 64))
 		currLogger.Infow("Calculate rewords")
-		rewords, err := rpd.CalculateRewords(db, balance, height, lastPaymentHeight)
-		if err != nil {
-			return err
-		}
-		currLogger.Debug("Rewords: ", rewords)
 
-		rewordTxs := rpd.CreateMassRewordTxs(rewords, rpdConfig)
+		rawRewards, err := rpd.CalculateRewords(db, balance, height, lastPaymentHeight)
+
+		sc := client.StakingCalculator{Url: &cfg.StakingCalculatorUrl}
+		scp := rpd.BalanceMapToStakingPaymentList(rawRewards)
+
+		calcResult := sc.FetchStakingRewards(scp)
+		var rewardTxs []transactions.Transaction
+
+		rewardTxs = append(rewardTxs, rpd.CreateDirectMassRewardTransactions(calcResult.Direct, rpdConfig)...)
+		rewardTxs = append(rewardTxs, rpd.CreateReferralMassRewardTransactions(calcResult.Ref, rpdConfig)...)
+
 		currLogger.Infow("Sign and broadcast")
-		for _, rewordTx := range rewordTxs {
+		for _, rewordTx := range rewardTxs {
 			if err := nodeClient.SignTx(&rewordTx); err != nil {
 				return err
 			}

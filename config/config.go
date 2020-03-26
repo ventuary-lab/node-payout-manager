@@ -15,6 +15,7 @@ type Config struct {
 	SleepSec                 int
 	AssetId                  string
 	DefaultLastPaymentHeight int
+	StakingCalculatorUrl     string
 }
 
 func Load(filename string) (Config, error) {
