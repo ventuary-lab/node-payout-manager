@@ -2,9 +2,10 @@ package main
 
 import (
 	"flag"
-	"fmt"
-	"os"
-	"reflect"
+	//"fmt"
+	"github.com/ventuary-lab/node-payout-manager/blockchain/transactions"
+	//"os"
+	//"reflect"
 	"strconv"
 	"time"
 
@@ -131,19 +132,19 @@ func Scan(nodeClient client.Node, cfg config.Config) error {
 	}
 
 	neutrinoContractState, err := nodeClient.GetStateByAddress(cfg.NeutrinoContract)
-
-	sc := client.StakingCalculator{Url: &cfg.StakingCalculatorUrl}
-	var scp []client.StakingCalculationPayment
-
-	scp = append(scp, client.StakingCalculationPayment{ Recipient: "3P2qrqPXWfsrX7uZidpRcYu35r81UGjHehB", Amount: 1000000000 })
-	scp = append(scp, client.StakingCalculationPayment{ Recipient: "3P3K39AP3yWfPUALfbNFRLKtNfCmGxpN8hE", Amount: 2000000000 })
-	scp = append(scp, client.StakingCalculationPayment{ Recipient: "3P3eFkKKZ42a7dDtvKrJ5ZWNak5a2T4VNCW", Amount: 3000000000 })
-
-	calcResult := sc.FetchStakingRewards(scp)
-
-	fmt.Printf("Type is: %v \n", reflect.TypeOf(calcResult))
-	fmt.Printf("RES: %+v \n", (*calcResult))
-	os.Exit(1)
+	//
+	//sc := client.StakingCalculator{Url: &cfg.StakingCalculatorUrl}
+	//var scp []client.StakingCalculationPayment
+	//
+	//scp = append(scp, client.StakingCalculationPayment{ Recipient: "3P2qrqPXWfsrX7uZidpRcYu35r81UGjHehB", Amount: 1000000000 })
+	//scp = append(scp, client.StakingCalculationPayment{ Recipient: "3P3K39AP3yWfPUALfbNFRLKtNfCmGxpN8hE", Amount: 2000000000 })
+	//scp = append(scp, client.StakingCalculationPayment{ Recipient: "3P3eFkKKZ42a7dDtvKrJ5ZWNak5a2T4VNCW", Amount: 3000000000 })
+	//
+	//calcResult := sc.FetchStakingRewards(scp)
+	//
+	//fmt.Printf("Type is: %v \n", reflect.TypeOf(calcResult))
+	//fmt.Printf("RES: %+v \n", (*calcResult))
+	//os.Exit(1)
 
 	if err != nil {
 		return err
@@ -161,7 +162,7 @@ func Scan(nodeClient client.Node, cfg config.Config) error {
 		currLogger.Infow("Total balance: " + strconv.FormatFloat(balance, 'f', 0, 64))
 		currLogger.Infow("Calculate rewords")
 		//
-		rewords, err := rpd.CalculateRewords(db, balance, height, lastPaymentHeight)
+		//rewords, err := rpd.CalculateRewords(db, balance, height, lastPaymentHeight)
 		//if err != nil {
 		//	return err
 		//}
@@ -177,15 +178,13 @@ func Scan(nodeClient client.Node, cfg config.Config) error {
 		scp = append(scp, client.StakingCalculationPayment{ Recipient: "3P3eFkKKZ42a7dDtvKrJ5ZWNak5a2T4VNCW", Amount: 3000000000 })
 
 		calcResult := sc.FetchStakingRewards(scp)
+		var rewardTxs []transactions.Transaction
 
-		fmt.Printf("Type is: %v \n", reflect.TypeOf(calcResult))
-		fmt.Printf("RES: %v \n", (*calcResult).Direct[0:3])
-		os.Exit(1)
-
-		rewordTxs := rpd.CreateMassRewardTxs(rewords, rpdConfig)
+		rewardTxs = append(rewardTxs, rpd.CreateDirectMassRewardTransactions(calcResult.Direct, rpdConfig)...)
+		rewardTxs = append(rewardTxs, rpd.CreateReferralMassRewardTransactions(calcResult.Ref, rpdConfig)...)
 
 		currLogger.Infow("Sign and broadcast")
-		for _, rewordTx := range rewordTxs {
+		for _, rewordTx := range rewardTxs {
 			if err := nodeClient.SignTx(&rewordTx); err != nil {
 				return err
 			}

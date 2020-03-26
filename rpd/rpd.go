@@ -127,6 +127,19 @@ func StateToBalanceMap(contractState map[string]state.State, rpdConfig Config) s
 	return balances
 }
 
+func GatherTransfersForMassRewardTxsFromSCP(rewords *[]client.StakingCalculationPayment) []transactions.Transfer {
+	transfers := make([]transactions.Transfer, 0, len(*rewords))
+
+	for _, value := range *rewords {
+		roundValue := math.Floor(float64(value.Amount))
+		if roundValue > 0 {
+			transfers = append(transfers, transactions.Transfer{Amount: int64(roundValue), Recipient: value.Recipient})
+		}
+	}
+
+	return transfers
+}
+
 func GatherTransfersForMassRewardTxs(rewords *storage.BalanceMap) []transactions.Transfer {
 	transfers := make([]transactions.Transfer, 0, len(*rewords))
 
@@ -140,8 +153,28 @@ func GatherTransfersForMassRewardTxs(rewords *storage.BalanceMap) []transactions
 	return transfers
 }
 
-func CreateMassRewardTxs(rewords storage.BalanceMap, rpdConfig Config) []transactions.Transaction {
-	transfers := GatherTransfersForMassRewardTxs(&rewords)
+//func CreateMassRewardTxs(rewords storage.BalanceMap, rpdConfig Config) []transactions.Transaction {
+//	transfers := GatherTransfersForMassRewardTxs(&rewords)
+//
+//	rewardTxs := make([]transactions.Transaction, 0, int(math.Ceil(float64(len(transfers))/100)))
+//	lenTransfers := len(transfers)
+//	for i := 0; i < lenTransfers; i += 100 {
+//		endIndex := i + 100
+//
+//		if endIndex > lenTransfers {
+//			endIndex = lenTransfers
+//		}
+//
+//		actualTransfers := transfers[i:endIndex]
+//		rewardTx := transactions.New(transactions.MassTransfer, rpdConfig.Sender)
+//		rewardTx.NewMassTransfer(actualTransfers, &rpdConfig.AssetId)
+//		rewardTxs = append(rewardTxs, rewardTx)
+//	}
+//	return rewardTxs
+//}
+
+func CreateDirectMassRewardTransactions(rewords []client.StakingCalculationPayment, rpdConfig Config) []transactions.Transaction {
+	transfers := GatherTransfersForMassRewardTxsFromSCP(&rewords)
 
 	rewardTxs := make([]transactions.Transaction, 0, int(math.Ceil(float64(len(transfers))/100)))
 	lenTransfers := len(transfers)
@@ -153,26 +186,6 @@ func CreateMassRewardTxs(rewords storage.BalanceMap, rpdConfig Config) []transac
 		}
 
 		actualTransfers := transfers[i:endIndex]
-		rewardTx := transactions.New(transactions.MassTransfer, rpdConfig.Sender)
-		rewardTx.NewMassTransfer(actualTransfers, &rpdConfig.AssetId)
-		rewardTxs = append(rewardTxs, rewardTx)
-	}
-	return rewardTxs
-}
-
-func CreateDirectMassRewardTransactions(rewords storage.BalanceMap, rpdConfig Config) []transactions.Transaction {
-	transfers := GatherTransfersForMassRewardTxs(&rewords)
-
-	rewardTxs := make([]transactions.Transaction, 0, int(math.Ceil(float64(len(transfers))/100)))
-	lenTransfers := len(transfers)
-	for i := 0; i < lenTransfers; i += 100 {
-		endIndex := i + 100
-
-		if endIndex > lenTransfers {
-			endIndex = lenTransfers
-		}
-
-		actualTransfers := transfers[i:endIndex]
 
 		rewardTx := transactions.New(transactions.MassTransfer, rpdConfig.Sender)
 		rewardTx.NewMassTransfer(actualTransfers, &rpdConfig.AssetId)
@@ -181,8 +194,8 @@ func CreateDirectMassRewardTransactions(rewords storage.BalanceMap, rpdConfig Co
 	return rewardTxs
 }
 
-func CreateReferralMassRewardTransactions(rewords storage.BalanceMap, rpdConfig Config) []transactions.Transaction {
-	transfers := GatherTransfersForMassRewardTxs(&rewords)
+func CreateReferralMassRewardTransactions(rewords []client.StakingCalculationPayment, rpdConfig Config) []transactions.Transaction {
+	transfers := GatherTransfersForMassRewardTxsFromSCP(&rewords)
 
 	rewardTxs := make([]transactions.Transaction, 0, int(math.Ceil(float64(len(transfers))/100)))
 	lenTransfers := len(transfers)
