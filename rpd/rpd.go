@@ -112,6 +112,16 @@ func CalculateRewords(db *leveldb.DB, totalProfit float64, height int, paymentHe
 	return rewords, nil
 }
 
+func BalanceMapToStakingPaymentList(bm storage.BalanceMap) []client.StakingCalculationPayment {
+	res := make([]client.StakingCalculationPayment, len(bm))
+
+	for address, value := range bm {
+		res = append(res, client.StakingCalculationPayment{ Amount: int64(value), Recipient: address })
+	}
+
+	return res
+}
+
 func StateToBalanceMap(contractState map[string]state.State, rpdConfig Config) storage.BalanceMap {
 	balances := make(storage.BalanceMap)
 	for key, value := range contractState {

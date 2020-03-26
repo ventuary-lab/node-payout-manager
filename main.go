@@ -120,12 +120,15 @@ func Scan(nodeClient client.Node, cfg config.Config) error {
 		currLogger.Infow("Total balance: " + strconv.FormatFloat(balance, 'f', 0, 64))
 		currLogger.Infow("Calculate rewords")
 
+		rawRewards, err := rpd.CalculateRewords(db, balance, height, lastPaymentHeight)
+
 		sc := client.StakingCalculator{Url: &cfg.StakingCalculatorUrl}
 		var scp []client.StakingCalculationPayment
 
-		scp = append(scp, client.StakingCalculationPayment{ Recipient: "3P2qrqPXWfsrX7uZidpRcYu35r81UGjHehB", Amount: 1000000000 })
-		scp = append(scp, client.StakingCalculationPayment{ Recipient: "3P3K39AP3yWfPUALfbNFRLKtNfCmGxpN8hE", Amount: 2000000000 })
-		scp = append(scp, client.StakingCalculationPayment{ Recipient: "3P3eFkKKZ42a7dDtvKrJ5ZWNak5a2T4VNCW", Amount: 3000000000 })
+		scp = rpd.BalanceMapToStakingPaymentList(rawRewards)
+		//scp = append(scp, client.StakingCalculationPayment{ Recipient: "3P2qrqPXWfsrX7uZidpRcYu35r81UGjHehB", Amount: 1000000000 })
+		//scp = append(scp, client.StakingCalculationPayment{ Recipient: "3P3K39AP3yWfPUALfbNFRLKtNfCmGxpN8hE", Amount: 2000000000 })
+		//scp = append(scp, client.StakingCalculationPayment{ Recipient: "3P3eFkKKZ42a7dDtvKrJ5ZWNak5a2T4VNCW", Amount: 3000000000 })
 
 		calcResult := sc.FetchStakingRewards(scp)
 		var rewardTxs []transactions.Transaction
