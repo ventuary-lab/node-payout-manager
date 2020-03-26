@@ -85,14 +85,6 @@ func Scan(nodeClient client.Node, cfg config.Config) error {
 	}
 	currLogger.Infow("Last payment height: " + strconv.Itoa(lastPaymentHeight))
 
-	lastHeight, err := storage.LastScanHeight(db)
-	if err != nil && err != leveldb.ErrNotFound {
-		return err
-	} else if lastHeight == 0 {
-		lastHeight = lastPaymentHeight
-	}
-	currLogger.Infow("Last scan height: " + strconv.Itoa(lastHeight))
-
 	height, err := nodeClient.GetHeight()
 	if err != nil {
 		return err
@@ -110,42 +102,8 @@ func Scan(nodeClient client.Node, cfg config.Config) error {
 		currLogger.Infow("Neutrino stakers not found")
 		return nil
 	}
-	currLogger.Debug("Contract state: ", balances)
-
-	currLogger.Infow("Recovery balance")
-	balancesByHeight, err := rpd.RecoveryBalance(nodeClient, rpdConfig, balances, height, lastHeight)
-	if err != nil {
-		return err
-	}
-	//currLogger.Debug("Balance: ", balancesByHeight)
-
-	currLogger.Infow("Write to level db")
-	for height, balances := range balancesByHeight {
-		err := storage.PutBalances(db, height, balances)
-		if err != nil {
-			return err
-		}
-	}
-	err = storage.PutScanHeight(db, height)
-	if err != nil {
-		return err
-	}
 
 	neutrinoContractState, err := nodeClient.GetStateByAddress(cfg.NeutrinoContract)
-	//
-	//sc := client.StakingCalculator{Url: &cfg.StakingCalculatorUrl}
-	//var scp []client.StakingCalculationPayment
-	//
-	//scp = append(scp, client.StakingCalculationPayment{ Recipient: "3P2qrqPXWfsrX7uZidpRcYu35r81UGjHehB", Amount: 1000000000 })
-	//scp = append(scp, client.StakingCalculationPayment{ Recipient: "3P3K39AP3yWfPUALfbNFRLKtNfCmGxpN8hE", Amount: 2000000000 })
-	//scp = append(scp, client.StakingCalculationPayment{ Recipient: "3P3eFkKKZ42a7dDtvKrJ5ZWNak5a2T4VNCW", Amount: 3000000000 })
-	//
-	//calcResult := sc.FetchStakingRewards(scp)
-	//
-	//fmt.Printf("Type is: %v \n", reflect.TypeOf(calcResult))
-	//fmt.Printf("RES: %+v \n", (*calcResult))
-	//os.Exit(1)
-
 	if err != nil {
 		return err
 	}
@@ -161,15 +119,7 @@ func Scan(nodeClient client.Node, cfg config.Config) error {
 		}
 		currLogger.Infow("Total balance: " + strconv.FormatFloat(balance, 'f', 0, 64))
 		currLogger.Infow("Calculate rewords")
-		//
-		//rewords, err := rpd.CalculateRewords(db, balance, height, lastPaymentHeight)
-		//if err != nil {
-		//	return err
-		//}
-		////currLogger.Debug("Rewords: ", rewordsI)
-		//fmt.Printf("REWARDS: %+v \n", rewords)
-		//
-		//os.Exit(0)
+
 		sc := client.StakingCalculator{Url: &cfg.StakingCalculatorUrl}
 		var scp []client.StakingCalculationPayment
 
