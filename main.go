@@ -85,6 +85,14 @@ func Scan(nodeClient client.Node, cfg config.Config) error {
 	}
 	currLogger.Infow("Last payment height: " + strconv.Itoa(lastPaymentHeight))
 
+	lastHeight, err := storage.LastScanHeight(db)
+	if err != nil && err != leveldb.ErrNotFound {
+		return err
+	} else if lastHeight == 0 {
+		lastHeight = lastPaymentHeight
+	}
+	currLogger.Infow("Last scan height: " + strconv.Itoa(lastHeight))
+
 	height, err := nodeClient.GetHeight()
 	if err != nil {
 		return err
@@ -102,8 +110,29 @@ func Scan(nodeClient client.Node, cfg config.Config) error {
 		currLogger.Infow("Neutrino stakers not found")
 		return nil
 	}
+	currLogger.Debug("Contract state: ", balances)
+
+	currLogger.Infow("Recovery balance")
+	balancesByHeight, err := rpd.RecoveryBalance(nodeClient, rpdConfig, balances, height, lastHeight)
+	if err != nil {
+		return err
+	}
+	//currLogger.Debug("Balance: ", balancesByHeight)
+
+	currLogger.Infow("Write to level db")
+	for height, balances := range balancesByHeight {
+		err := storage.PutBalances(db, height, balances)
+		if err != nil {
+			return err
+		}
+	}
+	err = storage.PutScanHeight(db, height)
+	if err != nil {
+		return err
+	}
 
 	neutrinoContractState, err := nodeClient.GetStateByAddress(cfg.NeutrinoContract)
+
 	if err != nil {
 		return err
 	}
